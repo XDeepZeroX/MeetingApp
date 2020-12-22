@@ -1,4 +1,5 @@
 import 'package:MeetingApp/common/routes.dart';
+import 'package:MeetingApp/common/session.dart';
 import 'package:MeetingApp/helpers/media_query_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +21,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // bool _rememberMe = false;
   String email = "test@test.ru";
-  String password = "672412Aa";
+  String password = "123123";
 
   @override
   void initState() {
@@ -29,8 +30,14 @@ class _LoginPageState extends State<LoginPage> {
 
   ///Авторизация пользователя после ввода пароля или отпесчатка пальца
   Future authorize() async {
-    ///Переход к приложению
-    Navigator.pushReplacementNamed(context, Routes.fields);
+    var res = await context.read<Session>().authorize(email, password);
+
+    if (res == '') {
+      ///Переход к приложению
+      Navigator.pushReplacementNamed(context, Routes.main);
+    } else {
+      Fluttertoast.showToast(msg: res);
+    }
   }
 
   @override
@@ -39,112 +46,109 @@ class _LoginPageState extends State<LoginPage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: getAppBar(context, titleText: 'Аавторизация'),
+      appBar: getAppBar(context, titleText: 'Авторизация'),
       drawer: getDrawer(context),
-      body: SingleChildScrollView(
-        child: Column(
-          children: <Widget>[
-            Image(
-              image: AssetImage('assets/images/logo.png'),
-            ),
-            Padding(
-              padding: EdgeInsets.only(left: width * 0.1, right: width * 0.1),
-              child: Column(
-                children: <Widget>[
-                  TextFormField(
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(16))),
-                    ),
-                    onChanged: (value) {
-                      email = value;
-                    },
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  TextFormField(
-                    keyboardType: TextInputType.text,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: "Пароль",
-                      border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(16))),
-                    ),
-                    onChanged: (value) => password = value,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: <Widget>[
-                            SwitchRememberMe(),
-                            Text("Запомнить меня")
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: RaisedButton(
-                      textColor: Colors.white,
-                      color: Colors.green[900],
-                      child: Text("Войти"),
-                      onPressed: () {
-                        if (!_isAuthenticating) authorize();
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    height: 15,
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: RaisedButton(
-                      textColor: Colors.white,
-                      color: Colors.black38,
-                      child: Text("Демо"),
-                      onPressed: () {
-                        Fluttertoast.showToast(
-                          msg: "Кнопка демо !",
-                        );
-                      },
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      FlatButton(
-                        padding: EdgeInsets.all(0),
-                        child: Text("Забыл пароль"),
-                        onPressed: () {
-                          Fluttertoast.showToast(
-                            msg: "Кнопка забыл пароль !",
-                          );
-                        },
-                      ),
-                      FlatButton(
-                        padding: EdgeInsets.all(0),
-                        child: Text("Регистрация"),
-                        onPressed: () {
-                          Fluttertoast.showToast(
-                            msg: "Кнопка зарегистрироваться !",
-                          );
-                        },
-                      ),
-                    ],
-                  )
-                ],
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 30),
+                child: Image(
+                  image: AssetImage('assets/images/email-love.png'),
+                  height: 100,
+                ),
               ),
-            )
-          ],
+              Padding(
+                padding: EdgeInsets.only(left: width * 0.1, right: width * 0.1),
+                child: Column(
+                  children: <Widget>[
+                    TextFormField(
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(16))),
+                      ),
+                      initialValue: email,
+                      onChanged: (value) {
+                        email = value;
+                      },
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    TextFormField(
+                      keyboardType: TextInputType.text,
+                      obscureText: true,
+                      initialValue: password,
+                      decoration: InputDecoration(
+                        labelText: "Пароль",
+                        border: const OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(16))),
+                      ),
+                      onChanged: (value) => password = value,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: <Widget>[
+                              SwitchRememberMe(),
+                              Text("Запомнить меня")
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: RaisedButton(
+                        textColor: Colors.white,
+                        color: Colors.green[900],
+                        child: Text("Войти"),
+                        onPressed: () {
+                          authorize();
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      height: 15,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        FlatButton(
+                          padding: EdgeInsets.all(0),
+                          child: Text("Забыл пароль"),
+                          onPressed: () {
+                            Fluttertoast.showToast(
+                              msg: "Кнопка забыл пароль !",
+                            );
+                          },
+                        ),
+                        FlatButton(
+                          padding: EdgeInsets.all(0),
+                          child: Text("Регистрация"),
+                          onPressed: () {
+                            Fluttertoast.showToast(
+                              msg: "Кнопка зарегистрироваться !",
+                            );
+                          },
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

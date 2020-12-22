@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:MeetingApp/common/session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -14,6 +15,8 @@ import 'common/routes.dart';
 import 'common/theme.dart';
 import 'extensions/string_extensions.dart';
 import 'screens/Auth/login_screen.dart';
+import 'screens/bottom_navigation.dart';
+import 'screens/users/search_user_screen.dart';
 
 void main() async {
   // WidgetsFlutterBinding.ensureInitialized();
@@ -24,9 +27,9 @@ void main() async {
 
   runApp(MultiProvider(
     providers: [
-      //Config
+      //Session
       Provider(
-        create: (context) => Config(),
+        create: (context) => Session(),
       ),
     ],
     child: App(),
@@ -43,11 +46,19 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getConfig();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       initialRoute: '/',
       routes: {
         "/": (context) => LoginPage(),
+        Routes.main: (context) => BottomMenu()
       },
       // home: Scaffold(
       //   body: Container(
@@ -55,6 +66,12 @@ class _AppState extends State<App> {
       //   ),
       // ),
     );
+  }
+
+  /// Получение конфинга из JSON
+  Future getConfig() async {
+    return Config.fromJson(
+        json.decode(await rootBundle.loadString('config.json')));
   }
 }
 
@@ -111,7 +128,7 @@ Drawer getDrawer(BuildContext context) {
         _AddButton(
           pathImage: 'assets/images/icons/football_field.png',
           title: 'Главная',
-          navigationPath: Routes.fields,
+          navigationPath: Routes.main,
         ),
       ],
     ),
