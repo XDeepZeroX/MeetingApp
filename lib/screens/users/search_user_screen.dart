@@ -6,10 +6,9 @@ import 'package:MeetingApp/common/session.dart';
 import 'package:MeetingApp/main.dart';
 import 'package:MeetingApp/models/sex.dart';
 import 'package:MeetingApp/models/user.dart';
+import 'package:MeetingApp/screens/messager/chat_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
-import 'test.dart';
 
 class SearchUserPage extends StatefulWidget {
   SearchUserPage({Key key}) : super(key: key);
@@ -19,14 +18,26 @@ class SearchUserPage extends StatefulWidget {
 }
 
 class _SearchUserPageState extends State<SearchUserPage> {
-  String _city = '';
-  int _sex = Sex.Girl;
-  int _minAge = 0;
-  int _maxAge = 100 + 1;
+  List<bool> isSelected = [true, false, false];
+  String _city;
+  int _sex;
+  int _minAge;
+  int _maxAge;
+  bool isLoading = false;
+  List<User> users = List<User>();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    resetFilter();
+    getUsers();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: getAppBar(context,
           titleWidget: Row(
             mainAxisSize: MainAxisSize.max,
@@ -35,7 +46,7 @@ class _SearchUserPageState extends State<SearchUserPage> {
               Text("Поиск"),
               FlatButton(
                 minWidth: 0,
-                onPressed: () => print('click'),
+                onPressed: () => showFilter(),
                 shape: CircleBorder(),
                 child: Image.asset(
                   'assets/images/filter.png',
@@ -45,73 +56,293 @@ class _SearchUserPageState extends State<SearchUserPage> {
               ),
             ],
           )),
-      body: FutureBuilder(
-        future: getUsers(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-                child: Text("Нет соединения с сетью",
-                    style: TextStyle(color: Colors.red)));
-          } else if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: (snapshot.data as List).length,
-              itemBuilder: (context, index) {
-                var item = snapshot.data[index] as User;
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ListTile(
-                    leading: Image.asset(
-                      'assets/images/image.png',
-                      width: 40,
-                    ),
-                    title: Text("${item.firstName} ${item.lastName}"),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Возраст: ${item.age}"),
-                        Text(
-                          "О себе: ${item.briefInformation ?? 'Информация не указана'}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : (users.length == 0
+              ? Center(child: Text("Пользователи не найдены"))
+              : ListView.builder(
+                  itemCount: users.length,
+                  itemBuilder: (context, index) {
+                    var item = users[index];
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ListTile(
+                        leading: Image.asset(
+                          'assets/images/image.png',
+                          width: 40,
                         ),
-                      ],
-                    ),
-                    trailing: FlatButton(
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(10),
-                        onPressed: () => print('open messager'),
-                        child: Icon(Icons.message),
-                        minWidth: 0),
-                    onTap: () => showUserInformation(item),
-                  ),
-                );
-              },
-            );
-          }
-          return Center(child: CircularProgressIndicator());
-        },
-      ),
+                        title: Text("${item.firstName} ${item.lastName}"),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Возраст: ${item.age}"),
+                            Text(
+                              "О себе: ${item.briefInformation ?? 'Информация не указана'}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        trailing: FlatButton(
+                            shape: CircleBorder(),
+                            padding: EdgeInsets.all(10),
+                            onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ChatPage(item.id,
+                                        "${item.firstName} ${item.lastName}"))),
+
+                            ///TODO: открыть сообщение с пользователем
+                            child: Icon(Icons.message),
+                            minWidth: 0),
+                        onTap: () => showUserInformation(item),
+                      ),
+                    );
+                  },
+                )),
+      // FutureBuilder(
+      //   future: getUsers(),
+      //   builder: (context, snapshot) {
+      //     if (snapshot.hasError) {
+      //       return Center(
+      //           child: Text("Нет соединения с сетью",
+      //               style: TextStyle(color: Colors.red)));
+      //     } else if (snapshot.hasData) {
+      //       return ListView.builder(
+      //         itemCount: (snapshot.data as List).length,
+      //         itemBuilder: (context, index) {
+      //           var item = snapshot.data[index] as User;
+      //           return Padding(
+      //             padding: const EdgeInsets.all(8.0),
+      //             child: ListTile(
+      //               leading: Image.asset(
+      //                 'assets/images/image.png',
+      //                 width: 40,
+      //               ),
+      //               title: Text("${item.firstName} ${item.lastName}"),
+      //               subtitle: Column(
+      //                 crossAxisAlignment: CrossAxisAlignment.start,
+      //                 children: [
+      //                   Text("Возраст: ${item.age}"),
+      //                   Text(
+      //                     "О себе: ${item.briefInformation ?? 'Информация не указана'}",
+      //                     maxLines: 1,
+      //                     overflow: TextOverflow.ellipsis,
+      //                   ),
+      //                 ],
+      //               ),
+      //               trailing: FlatButton(
+      //                   shape: CircleBorder(),
+      //                   padding: EdgeInsets.all(10),
+      //                   onPressed: () => print('open messager'),
+      //                   child: Icon(Icons.message),
+      //                   minWidth: 0),
+      //               onTap: () => showUserInformation(item),
+      //             ),
+      //           );
+      //         },
+      //       );
+      //     }
+      //     return Center(child: CircularProgressIndicator());
+      //   },
+      // ),
+      //
     );
   }
 
-  Future<List<User>> getUsers() async {
+  ///Фозвращает фильт в исходное состояние
+  void resetFilter() {
+    _city = '';
+    _sex = Sex.Girl;
+    _minAge = 0;
+    _maxAge = 100;
+    isSelected = [true, false, false];
+  }
+
+  ///Проверяте изменения фильра и обновляет значения для запроса к серверу
+  bool isChangeFilter(String city, int sex, int minAge, int maxAge) {
+    bool res = false;
+    if (_city != city && city != null) {
+      _city = city;
+      res |= true;
+    }
+    if (sex != _sex) {
+      _sex = sex;
+      res |= true;
+    }
+    if (minAge != _minAge) {
+      _minAge = minAge;
+      res |= true;
+    }
+    if (_maxAge != maxAge) {
+      _maxAge = maxAge;
+      res |= true;
+    }
+    return res;
+  }
+
+  Future getUsers() async {
+    setState(() {
+      isLoading = true;
+    });
     try {
-      print('test');
-      print(
-          '${Config.serverUrl}api/Search?city=$_city&sex=$_sex&minAge=$_minAge&maxAge=$_maxAge');
-      print(Session.authHeaders);
       var res = await http.get(
           "${Config.serverUrl}api/Search?city=$_city&sex=$_sex&minAge=$_minAge&maxAge=$_maxAge",
           headers: Session.authHeaders);
       if (res.statusCode == 200) {
         var _json = json.decode(res.body);
-        var list = (_json as List).map((e) => User.fromJson(e)).toList();
-        return list;
+        users = (_json as List).map((e) => User.fromJson(e)).toList();
       }
     } catch (e) {
-      print(e.toString() + '12');
+      print(e.toString());
+      users = List<User>();
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
-    return List<User>();
+  }
+
+  /// Выезжающая информация о пользователе
+  Future showFilter() async {
+    TextEditingController cityControl = TextEditingController();
+    cityControl.text = _city;
+    int sex = _sex;
+    double minAge = _minAge.toDouble();
+    double maxAge = _maxAge.toDouble();
+
+    await showModalBottomSheet(
+        isScrollControlled: true,
+        context: context,
+        backgroundColor: Colors.grey.shade50,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20), topRight: Radius.circular(20))),
+        builder: (context1) => StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) =>
+                  SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Фильтры",
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold)),
+                          FlatButton(
+                              onPressed: () {
+                                setState(() {
+                                  resetFilter();
+                                  cityControl.text = _city;
+                                  sex = _sex;
+                                  minAge = _minAge.toDouble();
+                                  maxAge = _maxAge.toDouble();
+                                });
+                                getUsers();
+                              },
+                              child: Text('Сбросить'))
+                        ],
+                      ),
+                      SizedBox(height: 20),
+                      TextFormField(
+                        controller: cityControl,
+                        // onChanged: (value) => cityControl.text = value,
+                        decoration: InputDecoration(
+                            // border: OutlineInputBorder(
+                            //     borderSide:
+                            //         BorderSide(color: Colors.purpleAccent)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: Colors.blueGrey[600])),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: Colors.lightBlue[900])),
+                            labelStyle: TextStyle(color: Colors.lightBlue[900]),
+                            labelText: 'Город'),
+                      ),
+                      SizedBox(height: 20),
+                      Text("Пол ", style: TextStyle(fontSize: 16)),
+                      SizedBox(height: 5),
+                      ToggleButtons(
+                        children: [
+                          getToggleButtonSex("assets/images/boy.png"),
+                          getToggleButtonSex("assets/images/girl.png"),
+                          getToggleButtonSex("assets/images/other.png")
+                        ],
+                        isSelected: isSelected,
+                        onPressed: (index) {
+                          setState(() {
+                            for (var i = 0; i < isSelected.length; i++) {
+                              isSelected[i] = false;
+                            }
+                            isSelected[index] = true;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 30),
+                      Text("Возраст", style: TextStyle(fontSize: 16)),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: Colors.red[700],
+                          inactiveTrackColor: Colors.red[100],
+                          trackShape: RoundedRectSliderTrackShape(),
+                          trackHeight: 4.0,
+                          thumbShape:
+                              RoundSliderThumbShape(enabledThumbRadius: 12.0),
+                          thumbColor: Colors.redAccent,
+                          overlayColor: Colors.red.withAlpha(32),
+                          overlayShape:
+                              RoundSliderOverlayShape(overlayRadius: 28.0),
+                          tickMarkShape: RoundSliderTickMarkShape(),
+                          activeTickMarkColor: Colors.red[700],
+                          inactiveTickMarkColor: Colors.red[100],
+                          valueIndicatorShape:
+                              PaddleSliderValueIndicatorShape(),
+                          valueIndicatorColor: Colors.redAccent,
+                          valueIndicatorTextStyle: TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
+                        child: RangeSlider(
+                          values: RangeValues(minAge, maxAge),
+                          min: 0,
+                          max: 100,
+                          divisions: 100,
+                          labels: RangeLabels(
+                              '${minAge.toInt()}', '${maxAge.toInt()}'),
+                          onChanged: (values) {
+                            setState(
+                              () {
+                                minAge = values.start;
+                                maxAge = values.end;
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      Padding(
+                          padding: EdgeInsets.only(
+                              bottom:
+                                  MediaQuery.of(context1).viewInsets.bottom)),
+                    ],
+                  ),
+                ),
+              ),
+            ));
+
+    if (isChangeFilter(cityControl.text, sex, minAge.toInt(), maxAge.toInt())) {
+      getUsers();
+    }
+  }
+
+  Widget getToggleButtonSex(String path_image) {
+    return Image.asset(
+      path_image,
+      width: 30,
+    );
   }
 
   /// Выезжающая информация о пользователе
@@ -279,6 +510,17 @@ class _SearchUserPageState extends State<SearchUserPage> {
                   children: <Widget>[
                     ListTile(
                       leading:
+                          Icon(Icons.person, color: Colors.deepOrangeAccent),
+                      title: Text("О себе",
+                          style: TextStyle(fontSize: 18, color: Colors.black)),
+                      subtitle: Text(
+                          user.briefInformation ?? "Информация не указана",
+                          style:
+                              TextStyle(fontSize: 15, color: Colors.black54)),
+                    ),
+                    Divider(),
+                    ListTile(
+                      leading:
                           Icon(Icons.email, color: Colors.deepOrangeAccent),
                       title: Text("Почта (E-mail)",
                           style: TextStyle(fontSize: 18, color: Colors.black)),
@@ -294,17 +536,6 @@ class _SearchUserPageState extends State<SearchUserPage> {
                           style: TextStyle(fontSize: 18, color: Colors.black)),
                       subtitle: Text(
                           user.phoneNumber.substring(0, 4) + '********',
-                          style:
-                              TextStyle(fontSize: 15, color: Colors.black54)),
-                    ),
-                    Divider(),
-                    ListTile(
-                      leading:
-                          Icon(Icons.person, color: Colors.deepOrangeAccent),
-                      title: Text("О себе",
-                          style: TextStyle(fontSize: 18, color: Colors.black)),
-                      subtitle: Text(
-                          user.briefInformation ?? "Информация не указана",
                           style:
                               TextStyle(fontSize: 15, color: Colors.black54)),
                     )
