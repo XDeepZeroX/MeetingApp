@@ -100,28 +100,33 @@ class _ChatPageState extends State<ChatPage> {
 
   ///Отрисовывает форму отправки сообщений
   Widget buildSender() {
-    return Container(
-      height: 70,
-      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      child: Row(
-        children: [
-          Expanded(
-              child: TextField(
-            textInputAction: TextInputAction.newline,
-            controller: messageConrol,
-            textCapitalization: TextCapitalization.sentences,
-            decoration:
-                InputDecoration.collapsed(hintText: "Введите сообщение..."),
-            maxLines: 3,
-            minLines: 1,
-          )),
-          IconButton(
-            icon: Icon(Icons.send),
-            onPressed: () => sendMessage(),
-            iconSize: 25,
+    return Column(
+      children: [
+        Divider(),
+        Container(
+          height: 70,
+          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          child: Row(
+            children: [
+              Expanded(
+                  child: TextField(
+                textInputAction: TextInputAction.newline,
+                controller: messageConrol,
+                textCapitalization: TextCapitalization.sentences,
+                decoration:
+                    InputDecoration.collapsed(hintText: "Введите сообщение..."),
+                maxLines: 3,
+                minLines: 1,
+              )),
+              IconButton(
+                icon: Icon(Icons.send),
+                onPressed: () => sendMessage(),
+                iconSize: 25,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

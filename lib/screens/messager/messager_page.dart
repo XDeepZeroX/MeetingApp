@@ -40,7 +40,7 @@ class _MessagerPageState extends State<MessagerPage> {
                   var title = dialog.title;
                   if (title == null) {
                     var user = dialog.users
-                        .firstWhere((e) => e.id == dialog.createUserId);
+                        .firstWhere((e) => e.id != Session.Id);
                     title = '${user.firstName} ${user.lastName}';
                   }
                   return ListTile(

@@ -11,6 +11,8 @@ class User {
   Null briefInformation;
   List<String> photos;
 
+  String get fullName => "$firstName $lastName";
+
   User(
       {this.id,
       this.firstName,
@@ -36,7 +38,7 @@ class User {
     city = json['city'];
     briefInformation = json['briefInformation'];
     if (json['photos'] != null) {
-      photos = (json['photos'] as List).map((e)=> e as String).toList();
+      photos = (json['photos'] as List).map((e) => e as String).toList();
     }
   }
 

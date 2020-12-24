@@ -8,6 +8,7 @@ import 'package:MeetingApp/models/sex.dart';
 import 'package:MeetingApp/models/user.dart';
 import 'package:MeetingApp/screens/messager/chat_page.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 
 class SearchUserPage extends StatefulWidget {
@@ -86,13 +87,7 @@ class _SearchUserPageState extends State<SearchUserPage> {
                         trailing: FlatButton(
                             shape: CircleBorder(),
                             padding: EdgeInsets.all(10),
-                            onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => ChatPage(item.id,
-                                        "${item.firstName} ${item.lastName}"))),
-
-                            ///TODO: открыть сообщение с пользователем
+                            onPressed: () => openDialog(item),
                             child: Icon(Icons.message),
                             minWidth: 0),
                         onTap: () => showUserInformation(item),
@@ -100,54 +95,29 @@ class _SearchUserPageState extends State<SearchUserPage> {
                     );
                   },
                 )),
-      // FutureBuilder(
-      //   future: getUsers(),
-      //   builder: (context, snapshot) {
-      //     if (snapshot.hasError) {
-      //       return Center(
-      //           child: Text("Нет соединения с сетью",
-      //               style: TextStyle(color: Colors.red)));
-      //     } else if (snapshot.hasData) {
-      //       return ListView.builder(
-      //         itemCount: (snapshot.data as List).length,
-      //         itemBuilder: (context, index) {
-      //           var item = snapshot.data[index] as User;
-      //           return Padding(
-      //             padding: const EdgeInsets.all(8.0),
-      //             child: ListTile(
-      //               leading: Image.asset(
-      //                 'assets/images/image.png',
-      //                 width: 40,
-      //               ),
-      //               title: Text("${item.firstName} ${item.lastName}"),
-      //               subtitle: Column(
-      //                 crossAxisAlignment: CrossAxisAlignment.start,
-      //                 children: [
-      //                   Text("Возраст: ${item.age}"),
-      //                   Text(
-      //                     "О себе: ${item.briefInformation ?? 'Информация не указана'}",
-      //                     maxLines: 1,
-      //                     overflow: TextOverflow.ellipsis,
-      //                   ),
-      //                 ],
-      //               ),
-      //               trailing: FlatButton(
-      //                   shape: CircleBorder(),
-      //                   padding: EdgeInsets.all(10),
-      //                   onPressed: () => print('open messager'),
-      //                   child: Icon(Icons.message),
-      //                   minWidth: 0),
-      //               onTap: () => showUserInformation(item),
-      //             ),
-      //           );
-      //         },
-      //       );
-      //     }
-      //     return Center(child: CircularProgressIndicator());
-      //   },
-      // ),
-      //
     );
+  }
+
+  Future openDialog(User user) async {
+    try {
+      var headers = Session.authHeaders;
+      headers['content-type'] = 'application/json';
+
+      var res = await http.post("${Config.serverUrl}api/Dialogs",
+          body: "[${user.id}]", headers: headers);
+      if (res.statusCode == 200) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  ChatPage(int.parse(res.body), "${user.firstName} ${user.lastName}"),
+            ));
+        return;
+      }
+    } catch (e) {
+      print(e.toString());
+    }
+    Fluttertoast.showToast(msg: "Сервер не доступен");
   }
 
   ///Фозвращает фильт в исходное состояние
@@ -279,6 +249,7 @@ class _SearchUserPageState extends State<SearchUserPage> {
                               isSelected[i] = false;
                             }
                             isSelected[index] = true;
+                            sex = index;
                           });
                         },
                       ),
@@ -332,7 +303,7 @@ class _SearchUserPageState extends State<SearchUserPage> {
                 ),
               ),
             ));
-
+    print(sex);
     if (isChangeFilter(cityControl.text, sex, minAge.toInt(), maxAge.toInt())) {
       getUsers();
     }
